@@ -1,0 +1,68 @@
+import sklearn as sk
+from sklearn.linear_model import LogisticRegression
+from sklearn import svm
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
+import numpy as np
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import chi2
+from sklearn.feature_selection import f_classif
+import seaborn as sns 
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+
+os.chdir(r"C:\Users\Alex\Dropbox (Modulated Imaging)\MI Inc - EE - Alex Sunday\ClassificationTutorial")
+focalspots = pd.read_csv('CombinedPilotBNMGFocalSpotDataset_20220805.csv', sep=',',header=0)
+focalspots.columns
+focalspotsdf = shuffle(focalspots)
+focalspots.columns
+
+best_columns = ['StO2_roi_q3','StO2_roi_med','HbT1_roi_q1','StO2_roi_q1','HbT1_roi_med']
+X = focalspots.loc[:,best_columns]
+y = focalspots.loc[:,'focal_spot_status']
+train_X, test_X, train_y, val_y = train_test_split(X,y, test_size = 0.10, random_state = 0)
+test_X.iloc[175:]
+
+LR = LogisticRegression(random_state = 1, solver = 'lbfgs', multi_class = 'ovr').fit(X,y)
+predictions = LR.predict(test_X.iloc[175:])
+print(round(LR.score(X,y), 4))
+print(predictions)
+
+bestfeatures = SelectKBest(score_func=f_classif, k=5)
+fit = bestfeatures.fit(X,y)
+dfscores = pd.DataFrame(fit.scores_)
+dfcolumns = pd.DataFrame(X.columns)
+featureScores = pd.concat([dfcolumns,dfscores],axis=1)
+featureScores.columns = ['Specs','Score']
+print(featureScores.nlargest(5,'Score')) 
+
+corrmat = focalspotsdf.corr() 
+top_Corr_features = corrmat.index
+plt.figure(figsize = (80,80))
+g = sns.heatmap(focalspotsdf[top_Corr_features].corr(), annot =True, cmap="RdYlGn") 
+
+R = LogisticRegression(random_state=1, solver='lbfgs', multi_class='ovr').fit(train_X, train_y)
+prediction = LR.predict(test_X.iloc[175:])
+print(prediction)
+print(round(LR.score(X,y),4))
+
+X = focalspotsdf.loc[:,best_columns]
+y = focalspotsdf.loc[:,'focal_spot_status']
+SVM = svm.LinearSVC(random_state = 1)
+SVM.fit(X, y)
+predictions = SVM.predict(test_X.iloc[175:])
+print(round(SVM.score(X, y), 4))
+print(predictions)
+
+X = focalspotsdf.loc[:,best_columns]
+y = focalspotsdf.loc[:,'focal_spot_status']
+RF = RandomForestClassifier(n_estimators=200, max_depth=2, random_state=0)
+RF.fit(X, y)
+predictions = RF.predict(test_X.iloc[175:])
+print(predictions)
+print(round(RF.score(X,y), 4))
+test_X.iloc[175:]
+
